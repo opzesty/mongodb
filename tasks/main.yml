@@ -1,0 +1,71 @@
+---
+# tasks file for mongodb
+- name: add mongodb repo
+  yum_repository:
+    name: mongodb
+    description: MongoDB Repository
+    baseurl: "https://repo.mongodb.org/yum/redhat/{{ redhat_version }}/mongodb-org/{{ mongo_version }}/x86_64/"
+    gpgcheck: yes
+    enabled: yes
+    gpgkey: https://www.mongodb.org/static/pgp/server-4.0.asc
+  vars:
+    redhat_version: 7
+    mongo_version: 4.0
+  become: yes
+
+- name: install mongodb
+  yum:
+    name: mongodb-org
+    state: present
+  become: yes
+
+- name: set replication engine
+  lineinfile:
+    regex: "^#  engine:"
+    line: "  engine: wiredTiger"
+    path: /etc/mongod.conf
+  become: yes
+
+- name: enable replication set
+  lineinfile:
+    regex: "^#replication:"
+    line: "replication:"
+    path: /etc/mongod.conf
+  become: yes
+
+- name: add replication set name
+  lineinfile:
+    line: "  replSetName: rs01"
+    insertafter: "replication:"
+    path: /etc/mongod.conf
+  become: yes
+
+- name: start mongod
+  service:
+    name: mongod
+    state: started
+  become: yes
+
+- name: enable mongod
+  service:
+    name: mongod
+    enabled: yes
+
+#- name: install pip
+#  yum:
+#    name: python2-pip
+#    state: present
+#  become: yes
+#
+#- name: install pymongo
+#  pip:
+#    name: pymongo
+#  become: yes
+#
+#- name: Ensure replicaset rs0 exists
+#  mongodb_replicaset:
+#    replica_set: rs01
+
+- name: start replication server the dumb dumb dumb way
+  shell: >
+    mongo --eval "printjson(rs.initiate())"
